@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base layer */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-bg text-text-primary;
+  }
+
+  /* Focus visible for keyboard navigation */
+  :focus-visible {
+    outline: none;
+  }
+}
+
+/* Component layer */
+@layer components {
+  /* None needed - primitives handle everything */
+}
+
+/* Utility layer */
+@layer utilities {
+  /* None needed - Tailwind handles everything */
+}

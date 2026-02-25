@@ -32,3 +32,4 @@ coverage/
 
 # TypeScript cache
 *.tsbuildinfo
+apps/web/.next

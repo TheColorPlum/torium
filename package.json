@@ -4,10 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "pnpm --filter @torium/worker dev",
+    "dev:web": "pnpm --filter @torium/web dev",
     "build": "pnpm --filter @torium/worker build",
+    "build:web": "pnpm --filter @torium/web build",
     "deploy": "pnpm --filter @torium/worker deploy",
     "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm -r lint"
+    "lint": "pnpm -r lint",
+    "lint:guardrails": "pnpm --filter @torium/web lint:guardrails"
   },
   "devDependencies": {
     "typescript": "^5.4.0"
