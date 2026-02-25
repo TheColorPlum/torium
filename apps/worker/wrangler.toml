@@ -46,6 +46,13 @@ APP_URL = "https://torium.app"
 MAGIC_LINK_EXPIRY_MINUTES = "15"
 SESSION_EXPIRY_DAYS = "30"
 
+# Scheduled triggers (cron jobs)
+[triggers]
+crons = [
+  "*/5 * * * *",   # Aggregation: every 5 minutes
+  "0 3 * * *"      # Retention: daily at 3 AM UTC
+]
+
 # Development overrides
 [env.development]
 vars = { APP_URL = "http://localhost:8787" }

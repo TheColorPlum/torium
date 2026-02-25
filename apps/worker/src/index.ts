@@ -9,9 +9,12 @@ import { logger } from 'hono/logger';
 import { success, error } from '@torium/shared';
 import { auth } from './routes/auth';
 import { links } from './routes/links';
+import { analytics } from './routes/analytics';
 import { redirect } from './routes/redirect';
 import { validateEnv, type Env } from './lib/env';
 import { handleClickBatch } from './consumers/clicks';
+import { runAggregation } from './jobs/aggregation';
+import { runRetention } from './jobs/retention';
 import type { ClickEvent } from '@torium/shared';
 
 // Export Durable Object class
@@ -46,6 +49,9 @@ v1.route('/auth', auth);
 // Mount links routes
 v1.route('/links', links);
 
+// Mount analytics routes
+v1.route('/analytics', analytics);
+
 // API info endpoint
 v1.get('/', (c) => {
   return c.json(
@@ -75,7 +81,7 @@ app.onError((err, c) => {
   return c.json(error('INTERNAL_ERROR', 'An unexpected error occurred'), 500);
 });
 
-// Export worker with fetch and queue handlers
+// Export worker with fetch, queue, and scheduled handlers
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     // Validate environment on first request (will throw if missing vars)
@@ -97,5 +103,31 @@ export default {
   // Queue consumer handler for click events
   async queue(batch: MessageBatch<ClickEvent>, env: Env): Promise<void> {
     await handleClickBatch(batch, env);
+  },
+
+  // Scheduled handler for cron triggers (aggregation + retention)
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    console.log(`[Scheduled] Cron trigger: ${event.cron}`);
+
+    switch (event.cron) {
+      case '*/5 * * * *': // Every 5 minutes - aggregation
+        ctx.waitUntil(
+          runAggregation(env).catch((err) => {
+            console.error('[Scheduled] Aggregation failed:', err);
+          })
+        );
+        break;
+
+      case '0 3 * * *': // Daily at 3 AM UTC - retention
+        ctx.waitUntil(
+          runRetention(env).catch((err) => {
+            console.error('[Scheduled] Retention failed:', err);
+          })
+        );
+        break;
+
+      default:
+        console.log(`[Scheduled] Unknown cron pattern: ${event.cron}`);
+    }
   },
 };
