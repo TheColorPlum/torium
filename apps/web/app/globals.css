@@ -26,5 +26,27 @@
 
 /* Utility layer */
 @layer utilities {
-  /* None needed - Tailwind handles everything */
+  /* Loading spinner - uses keyframes for rotation */
+  .spinner {
+    -webkit-animation: rotation 1s linear infinite;
+    -moz-animation: rotation 1s linear infinite;
+    -o-animation: rotation 1s linear infinite;
+  }
+  
+  @-webkit-keyframes rotation {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @-moz-keyframes rotation {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @-o-keyframes rotation {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes rotation {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
 }

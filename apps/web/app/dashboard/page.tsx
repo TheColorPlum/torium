@@ -1,62 +1,159 @@
-import { Card, CardHeader, CardTitle, CardContent, UsageMeter, Button } from '@/components/ui';
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { Card, CardHeader, CardTitle, CardContent, Button } from '@/components/ui';
+import {
+  StatsCard,
+  UsageMeterCard,
+  CapBanner,
+  BreakdownList,
+} from '@/components/dashboard';
+import { useAuth } from '@/lib/auth';
+import { useAsync } from '@/lib/hooks';
+import { analytics, billing } from '@/lib/api';
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const { user } = useAuth();
+  
+  const { data: overview, loading: overviewLoading } = useAsync(
+    () => analytics.overview(),
+    []
+  );
+
+  const { data: billingStatus, loading: billingLoading } = useAsync(
+    () => billing.status(),
+    []
+  );
+
+  const handleUpgrade = async () => {
+    try {
+      const { url } = await billing.checkout();
+      window.location.href = url;
+    } catch {
+      // Handle error silently or show toast
+    }
+  };
+
+  const loading = overviewLoading || billingLoading;
+  const plan = billingStatus?.plan || user?.plan || 'free';
+  const usage = billingStatus?.usage || { current: 0, included: 5000 };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      {/* Cap banner */}
+      {!loading && (
+        <CapBanner
+          current={usage.current}
+          limit={usage.included}
+          plan={plan}
+          onUpgrade={handleUpgrade}
+        />
+      )}
+
       {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-sm text-text-secondary mb-1">Total Clicks</div>
-            <div className="text-3xl font-bold text-text-primary">1,234</div>
-            <div className="text-sm text-text-muted mt-1">This month</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-sm text-text-secondary mb-1">Active Links</div>
-            <div className="text-3xl font-bold text-text-primary">12</div>
-            <div className="text-sm text-text-muted mt-1">Across all campaigns</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-sm text-text-secondary mb-1">QR Scans</div>
-            <div className="text-3xl font-bold text-text-primary">567</div>
-            <div className="text-sm text-text-muted mt-1">This month</div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          label="Total Clicks"
+          value={overview?.clicks30d || 0}
+          subtext="Last 30 days"
+          loading={loading}
+        />
+        <StatsCard
+          label="Active Links"
+          value={overview?.linksCount || 0}
+          subtext="Total links"
+          loading={loading}
+        />
+        <StatsCard
+          label="This Week"
+          value={overview?.clicks7d || 0}
+          subtext="Last 7 days"
+          loading={loading}
+        />
       </div>
 
       {/* Usage meter */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Usage</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <UsageMeter current={1234} limit={5000} />
-          <p className="text-sm text-text-secondary mt-4">
-            You&apos;ve used 1,234 of your 5,000 tracked clicks this month.
-          </p>
-        </CardContent>
-      </Card>
+      <UsageMeterCard
+        current={usage.current}
+        limit={usage.included}
+        plan={plan}
+        loading={loading}
+        onUpgrade={handleUpgrade}
+      />
 
-      {/* Recent links placeholder */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Recent Links</CardTitle>
-          <Button size="sm">Create link</Button>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <p className="text-text-secondary">
-              Dashboard business logic will be implemented in a later milestone.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Breakdowns */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Top Links */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Top Links</CardTitle>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => router.push('/dashboard/links')}
+            >
+              View all
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <BreakdownList
+              title=""
+              items={
+                overview?.topLinks.map((link) => ({
+                  label: link.slug,
+                  value: link.clicks,
+                  percentage: overview.clicks30d > 0 ? (link.clicks / overview.clicks30d) * 100 : 0,
+                })) || []
+              }
+              loading={loading}
+              emptyMessage="No links yet"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Top Referrers */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Referrers</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BreakdownList
+              title=""
+              items={
+                overview?.topReferrers.map((ref) => ({
+                  label: ref.referrer || 'Direct',
+                  value: ref.clicks,
+                  percentage: overview.clicks30d > 0 ? (ref.clicks / overview.clicks30d) * 100 : 0,
+                })) || []
+              }
+              loading={loading}
+              emptyMessage="No referrer data"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Top Countries */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Countries</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BreakdownList
+              title=""
+              items={
+                overview?.topCountries.map((c) => ({
+                  label: c.country,
+                  value: c.clicks,
+                  percentage: overview.clicks30d > 0 ? (c.clicks / overview.clicks30d) * 100 : 0,
+                })) || []
+              }
+              loading={loading}
+              emptyMessage="No country data"
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

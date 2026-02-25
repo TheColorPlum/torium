@@ -1,6 +1,10 @@
-import { SidebarNav, SidebarNavItem, SidebarNavGroup } from '@/components/ui';
+'use client';
 
-// Placeholder icons
+import { usePathname, useRouter } from 'next/navigation';
+import { SidebarNav, SidebarNavItem, SidebarNavGroup, Button } from '@/components/ui';
+import { AuthProvider, useAuth } from '@/lib/auth';
+
+// Icons
 function HomeIcon() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -17,14 +21,6 @@ function LinkIcon() {
   );
 }
 
-function QrIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-    </svg>
-  );
-}
-
 function ChartIcon() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -33,12 +29,154 @@ function ChartIcon() {
   );
 }
 
-function SettingsIcon() {
+function CreditCardIcon() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
     </svg>
+  );
+}
+
+function LogoutIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+    </svg>
+  );
+}
+
+function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
+
+  // Get page title based on pathname
+  const getPageTitle = () => {
+    if (pathname === '/dashboard') return 'Overview';
+    if (pathname === '/dashboard/links') return 'Links';
+    if (pathname.startsWith('/dashboard/links/')) return 'Link Details';
+    if (pathname === '/dashboard/analytics') return 'Analytics';
+    if (pathname === '/dashboard/billing') return 'Billing';
+    return 'Dashboard';
+  };
+
+  // Redirect to login if not authenticated
+  if (!loading && !user) {
+    router.push('/login');
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen flex">
+      {/* Sidebar */}
+      <aside className="w-60 bg-bg-secondary border-r border-border flex flex-col">
+        {/* Logo */}
+        <div className="h-16 px-6 flex items-center border-b border-border">
+          <a href="/dashboard" className="text-xl font-bold text-text-primary">
+            Torium
+          </a>
+        </div>
+
+        {/* Navigation */}
+        <div className="flex-1 py-4 px-3">
+          <SidebarNav>
+            <SidebarNavGroup>
+              <SidebarNavItem
+                href="/dashboard"
+                icon={<HomeIcon />}
+                active={pathname === '/dashboard'}
+              >
+                Overview
+              </SidebarNavItem>
+              <SidebarNavItem
+                href="/dashboard/links"
+                icon={<LinkIcon />}
+                active={pathname === '/dashboard/links' || pathname.startsWith('/dashboard/links/')}
+              >
+                Links
+              </SidebarNavItem>
+              <SidebarNavItem
+                href="/dashboard/analytics"
+                icon={<ChartIcon />}
+                active={pathname === '/dashboard/analytics'}
+              >
+                Analytics
+              </SidebarNavItem>
+            </SidebarNavGroup>
+
+            <SidebarNavGroup title="Account">
+              <SidebarNavItem
+                href="/dashboard/billing"
+                icon={<CreditCardIcon />}
+                active={pathname === '/dashboard/billing'}
+              >
+                Billing
+              </SidebarNavItem>
+            </SidebarNavGroup>
+          </SidebarNav>
+        </div>
+
+        {/* User section */}
+        <div className="p-4 border-t border-border">
+          {loading ? (
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-bg-tertiary" />
+              <div className="flex-1">
+                <div className="h-4 w-24 bg-bg-tertiary rounded-sm mb-1" />
+                <div className="h-3 w-16 bg-bg-tertiary rounded-sm" />
+              </div>
+            </div>
+          ) : user ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-accent-500 flex items-center justify-center text-text-inverse text-sm font-medium">
+                  {user.email.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-text-primary truncate">
+                    {user.email}
+                  </div>
+                  <div className="text-xs text-text-secondary">
+                    {user.plan === 'pro' ? 'Pro plan' : 'Free plan'}
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full"
+                onClick={handleLogout}
+              >
+                <span className="flex items-center gap-2">
+                  <LogoutIcon />
+                  Sign out
+                </span>
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      </aside>
+
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col">
+        {/* Top bar */}
+        <header className="h-16 px-8 flex items-center justify-between border-b border-border bg-bg">
+          <h1 className="text-lg font-semibold text-text-primary">
+            {getPageTitle()}
+          </h1>
+        </header>
+
+        {/* Content container */}
+        <main className="flex-1 p-8 bg-bg-secondary overflow-auto">
+          {children}
+        </main>
+      </div>
+    </div>
   );
 }
 
@@ -48,75 +186,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex">
-      {/* Sidebar */}
-      <aside className="w-60 bg-bg-secondary border-r border-border flex flex-col">
-        {/* Logo */}
-        <div className="h-16 px-6 flex items-center border-b border-border">
-          <span className="text-xl font-bold text-text-primary">Torium</span>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex-1 py-4 px-3">
-          <SidebarNav>
-            <SidebarNavGroup>
-              <SidebarNavItem href="/dashboard" icon={<HomeIcon />} active>
-                Overview
-              </SidebarNavItem>
-              <SidebarNavItem href="/dashboard/links" icon={<LinkIcon />}>
-                Links
-              </SidebarNavItem>
-              <SidebarNavItem href="/dashboard/qr" icon={<QrIcon />}>
-                QR Codes
-              </SidebarNavItem>
-              <SidebarNavItem href="/dashboard/analytics" icon={<ChartIcon />}>
-                Analytics
-              </SidebarNavItem>
-            </SidebarNavGroup>
-
-            <SidebarNavGroup title="Account">
-              <SidebarNavItem href="/dashboard/settings" icon={<SettingsIcon />}>
-                Settings
-              </SidebarNavItem>
-            </SidebarNavGroup>
-          </SidebarNav>
-        </div>
-
-        {/* User section */}
-        <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-accent-500 flex items-center justify-center text-text-inverse text-sm font-medium">
-              U
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-text-primary truncate">
-                User Name
-              </div>
-              <div className="text-xs text-text-secondary truncate">
-                Free plan
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col">
-        {/* Top bar */}
-        <header className="h-16 px-8 flex items-center justify-between border-b border-border bg-bg">
-          <h1 className="text-lg font-semibold text-text-primary">
-            Dashboard
-          </h1>
-          <div className="flex items-center gap-4">
-            {/* Placeholder for top-right actions */}
-          </div>
-        </header>
-
-        {/* Content container */}
-        <main className="flex-1 p-8 bg-bg-secondary overflow-auto">
-          {children}
-        </main>
-      </div>
-    </div>
+    <AuthProvider>
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+    </AuthProvider>
   );
 }
