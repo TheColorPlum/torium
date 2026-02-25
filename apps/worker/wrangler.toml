@@ -7,7 +7,7 @@ compatibility_date = "2024-02-22"
 [[d1_databases]]
 binding = "DB"
 database_name = "torium-db"
-database_id = "REPLACE_WITH_ACTUAL_DATABASE_ID"
+database_id = "a0983129-1b80-4161-9257-9dd454bfb844"
 
 # Environment variables (secrets - set via `wrangler secret put`)
 # Required:
