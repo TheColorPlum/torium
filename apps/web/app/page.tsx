@@ -100,9 +100,12 @@ export default function LandingPage() {
             <a href="#pricing" className="text-sm text-text-secondary hover:text-text-primary transition-colors duration-150">
               Pricing
             </a>
-            <Button variant="secondary" size="sm" asChild>
-              <a href="/login">Sign in</a>
-            </Button>
+            <a
+              href="/login"
+              className="inline-flex items-center justify-center font-medium rounded-sm transition-colors duration-150 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 text-sm px-3 py-1.5 bg-bg border border-border text-text-primary hover:bg-bg-secondary focus:ring-accent-ring"
+            >
+              Sign in
+            </a>
           </nav>
         </div>
       </header>
