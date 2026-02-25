@@ -100,11 +100,11 @@ export default function DashboardPage() {
             <BreakdownList
               title=""
               items={
-                overview?.topLinks.map((link) => ({
+                overview?.topLinks?.map((link) => ({
                   label: link.slug,
                   value: link.clicks,
                   percentage: overview.clicks30d > 0 ? (link.clicks / overview.clicks30d) * 100 : 0,
-                })) || []
+                })) ?? []
               }
               loading={loading}
               emptyMessage="No links yet"
@@ -121,11 +121,11 @@ export default function DashboardPage() {
             <BreakdownList
               title=""
               items={
-                overview?.topReferrers.map((ref) => ({
+                overview?.topReferrers?.map((ref) => ({
                   label: ref.referrer || 'Direct',
                   value: ref.clicks,
                   percentage: overview.clicks30d > 0 ? (ref.clicks / overview.clicks30d) * 100 : 0,
-                })) || []
+                })) ?? []
               }
               loading={loading}
               emptyMessage="No referrer data"
@@ -142,11 +142,11 @@ export default function DashboardPage() {
             <BreakdownList
               title=""
               items={
-                overview?.topCountries.map((c) => ({
+                overview?.topCountries?.map((c) => ({
                   label: c.country,
                   value: c.clicks,
                   percentage: overview.clicks30d > 0 ? (c.clicks / overview.clicks30d) * 100 : 0,
-                })) || []
+                })) ?? []
               }
               loading={loading}
               emptyMessage="No country data"
