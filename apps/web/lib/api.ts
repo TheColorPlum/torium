@@ -65,7 +65,9 @@ async function request<T>(
     return undefined as T;
   }
 
-  return response.json();
+  const json = await response.json();
+  // API wraps responses in { data: ... }, unwrap it
+  return (json.data !== undefined ? json.data : json) as T;
 }
 
 // ============================================================
@@ -137,6 +139,20 @@ export interface Link {
   updatedAt: string;
 }
 
+// Transform API link response to frontend format
+function transformLink(apiLink: Record<string, unknown>): Link {
+  return {
+    id: apiLink.id as string,
+    slug: apiLink.slug as string,
+    destination: (apiLink.destination_url || apiLink.destination) as string,
+    clicks7d: (apiLink.clicks_7d || apiLink.clicks7d || 0) as number,
+    clicks30d: (apiLink.clicks_30d || apiLink.clicks30d || 0) as number,
+    status: apiLink.status as 'active' | 'paused',
+    createdAt: (apiLink.created_at || apiLink.createdAt) as string,
+    updatedAt: (apiLink.updated_at || apiLink.updatedAt) as string,
+  };
+}
+
 export interface LinksResponse {
   links: Link[];
   total: number;
@@ -155,25 +171,32 @@ export interface UpdateLinkInput {
 
 export const links = {
   async list(): Promise<LinksResponse> {
-    return request('/links');
+    const response = await request<{ links: Record<string, unknown>[]; total: number }>('/links');
+    return {
+      links: (response.links || []).map(transformLink),
+      total: response.total || 0,
+    };
   },
 
   async get(id: string): Promise<Link> {
-    return request(`/links/${id}`);
+    const response = await request<Record<string, unknown>>(`/links/${id}`);
+    return transformLink(response);
   },
 
   async create(data: CreateLinkInput): Promise<Link> {
-    return request('/links', {
+    const response = await request<Record<string, unknown>>('/links', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+    return transformLink(response);
   },
 
   async update(id: string, data: UpdateLinkInput): Promise<Link> {
-    return request(`/links/${id}`, {
+    const response = await request<Record<string, unknown>>(`/links/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
+    return transformLink(response);
   },
 
   async delete(id: string): Promise<void> {
