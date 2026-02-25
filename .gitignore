@@ -27,6 +27,9 @@ Thumbs.db
 *.log
 logs/
 
+# Vercel
+.vercel/
+
 # Test coverage
 coverage/
 
