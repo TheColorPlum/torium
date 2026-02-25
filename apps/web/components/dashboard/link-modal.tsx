@@ -64,11 +64,11 @@ export function LinkModal({ open, onClose, link, onSuccess }: LinkModalProps) {
       
       if (isEdit && link) {
         const updates: UpdateLinkInput = {};
-        if (normalizedDestination !== link.destination) updates.destination = normalizedDestination;
+        if (normalizedDestination !== link.destination) updates.destination_url = normalizedDestination;
         if (slug !== link.slug) updates.slug = slug || undefined;
         result = await linksApi.update(link.id, updates);
       } else {
-        const input: CreateLinkInput = { destination: normalizedDestination };
+        const input: CreateLinkInput = { destination_url: normalizedDestination };
         if (slug.trim()) input.slug = slug;
         result = await linksApi.create(input);
       }

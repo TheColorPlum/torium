@@ -143,12 +143,12 @@ export interface LinksResponse {
 }
 
 export interface CreateLinkInput {
-  destination: string;
+  destination_url: string;
   slug?: string;
 }
 
 export interface UpdateLinkInput {
-  destination?: string;
+  destination_url?: string;
   slug?: string;
   status?: 'active' | 'paused';
 }
