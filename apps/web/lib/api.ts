@@ -3,7 +3,31 @@
  * All API calls go through this module
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+// NEXT_PUBLIC_* vars must be inlined at build time.
+// If missing, we detect production by hostname and use the correct URL.
+function getApiBase(): string {
+  // Check build-time env var first
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // Runtime fallback: detect production by hostname
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'app.torium.app' || hostname === 'torium.app') {
+      return 'https://torium.app/api/v1';
+    }
+    // Local development
+    if (hostname === 'localhost') {
+      return 'http://localhost:8787/api/v1';
+    }
+  }
+  
+  // Server-side or unknown: use relative (will fail on wrong domain but at least we tried)
+  return '/api/v1';
+}
+
+const API_BASE = getApiBase();
 
 export class ApiError extends Error {
   constructor(
