@@ -46,3 +46,6 @@ export type {
 } from './api';
 
 export { isApiError, success, error } from './api';
+
+// Click types
+export type { ClickEvent, RawClick, DeviceType } from './click';

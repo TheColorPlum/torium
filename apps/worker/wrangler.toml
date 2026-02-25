@@ -9,6 +9,17 @@ binding = "DB"
 database_name = "torium-db"
 database_id = "a0983129-1b80-4161-9257-9dd454bfb844"
 
+# Queue producer binding
+[[queues.producers]]
+binding = "CLICKS_QUEUE"
+queue = "torium-clicks"
+
+# Queue consumer configuration
+[[queues.consumers]]
+queue = "torium-clicks"
+max_batch_size = 100
+max_batch_timeout = 30
+
 # Environment variables (secrets - set via `wrangler secret put`)
 # Required:
 #   RESEND_API_KEY - API key for Resend email service

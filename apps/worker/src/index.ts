@@ -11,6 +11,8 @@ import { auth } from './routes/auth';
 import { links } from './routes/links';
 import { redirect } from './routes/redirect';
 import { validateEnv, type Env } from './lib/env';
+import { handleClickBatch } from './consumers/clicks';
+import type { ClickEvent } from '@torium/shared';
 
 // Create Hono app with typed bindings
 const app = new Hono<{ Bindings: Env }>();
@@ -70,7 +72,7 @@ app.onError((err, c) => {
   return c.json(error('INTERNAL_ERROR', 'An unexpected error occurred'), 500);
 });
 
-// Export worker
+// Export worker with fetch and queue handlers
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     // Validate environment on first request (will throw if missing vars)
@@ -87,5 +89,10 @@ export default {
     }
 
     return app.fetch(request, env, ctx);
+  },
+
+  // Queue consumer handler for click events
+  async queue(batch: MessageBatch<ClickEvent>, env: Env): Promise<void> {
+    await handleClickBatch(batch, env);
   },
 };
