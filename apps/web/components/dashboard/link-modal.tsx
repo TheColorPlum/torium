@@ -40,10 +40,22 @@ export function LinkModal({ open, onClose, link, onSuccess }: LinkModalProps) {
     }
   }, [open, link]);
 
+  const normalizeUrl = (url: string): string => {
+    const trimmed = url.trim();
+    if (!trimmed) return trimmed;
+    // Auto-add https:// if no protocol
+    if (!/^https?:\/\//i.test(trimmed)) {
+      return `https://${trimmed}`;
+    }
+    return trimmed;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!destination.trim()) return;
 
+    const normalizedDestination = normalizeUrl(destination);
+    
     setLoading(true);
     setError(null);
 
@@ -52,11 +64,11 @@ export function LinkModal({ open, onClose, link, onSuccess }: LinkModalProps) {
       
       if (isEdit && link) {
         const updates: UpdateLinkInput = {};
-        if (destination !== link.destination) updates.destination = destination;
+        if (normalizedDestination !== link.destination) updates.destination = normalizedDestination;
         if (slug !== link.slug) updates.slug = slug || undefined;
         result = await linksApi.update(link.id, updates);
       } else {
-        const input: CreateLinkInput = { destination };
+        const input: CreateLinkInput = { destination: normalizedDestination };
         if (slug.trim()) input.slug = slug;
         result = await linksApi.create(input);
       }
@@ -137,15 +149,15 @@ export function LinkModal({ open, onClose, link, onSuccess }: LinkModalProps) {
                 </label>
                 <Input
                   id="destination"
-                  type="url"
-                  placeholder="https://example.com/your-long-url"
+                  type="text"
+                  placeholder="example.com/your-page"
                   value={destination}
                   onChange={(e) => setDestination(e.target.value)}
                   required
                   autoFocus={!isEdit}
                 />
                 <p className="text-xs text-text-muted mt-1">
-                  The full URL where visitors will be redirected
+                  https:// will be added automatically if not included
                 </p>
               </div>
 
