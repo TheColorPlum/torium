@@ -26,6 +26,16 @@ export type {
 // Domain types
 export type { Domain, DomainRow, DomainStatus } from './domain';
 
+// Link types
+export type {
+  Link,
+  LinkRow,
+  LinkStatus,
+  CreateLinkInput,
+  UpdateLinkInput,
+} from './link';
+export { toLinkEntity } from './link';
+
 // API types
 export type {
   ApiResponse,

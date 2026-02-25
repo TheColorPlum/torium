@@ -8,6 +8,8 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { success, error } from '@torium/shared';
 import { auth } from './routes/auth';
+import { links } from './routes/links';
+import { redirect } from './routes/redirect';
 import { validateEnv, type Env } from './lib/env';
 
 // Create Hono app with typed bindings
@@ -36,6 +38,9 @@ const v1 = new Hono<{ Bindings: Env }>();
 // Mount auth routes
 v1.route('/auth', auth);
 
+// Mount links routes
+v1.route('/links', links);
+
 // API info endpoint
 v1.get('/', (c) => {
   return c.json(
@@ -49,6 +54,10 @@ v1.get('/', (c) => {
 
 // Mount v1 under /api/v1
 app.route('/api/v1', v1);
+
+// Mount redirect handler AFTER API routes
+// Catches /:slug for link resolution
+app.route('/', redirect);
 
 // Global 404 handler
 app.notFound((c) => {
