@@ -166,7 +166,7 @@ export function LinkModal({ open, onClose, link, onSuccess }: LinkModalProps) {
                   Custom slug <span className="text-text-muted">(optional)</span>
                 </label>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-text-muted">tor.io/</span>
+                  <span className="text-sm text-text-muted">torium.app/</span>
                   <Input
                     id="slug"
                     type="text"

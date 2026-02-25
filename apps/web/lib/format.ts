@@ -94,7 +94,7 @@ export function formatPercentage(value: number, decimals = 1): string {
  * Get short URL from slug
  */
 export function getShortUrl(slug: string): string {
-  const baseUrl = process.env.NEXT_PUBLIC_SHORT_URL || 'tor.io';
+  const baseUrl = process.env.NEXT_PUBLIC_SHORT_URL || 'torium.app';
   return `${baseUrl}/${slug}`;
 }
 
