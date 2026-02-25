@@ -230,13 +230,14 @@ async function handleVerify(c: Context<{ Bindings: Env }>) {
     .bind(sessionId, user.id, workspace.id, sessionTokenHash, sessionExpiresAt, now())
     .run();
 
-  // Set session cookie
+  // Set session cookie (domain includes subdomain for app.torium.app)
   setCookie(c, SESSION_COOKIE_NAME, sessionToken, {
     httpOnly: true,
     secure: true,
     sameSite: 'Lax',
     path: '/',
     maxAge: 30 * 24 * 60 * 60, // 30 days
+    domain: '.torium.app', // Share across subdomains
   });
 
   // For GET requests (direct link clicks), redirect to dashboard
@@ -293,6 +294,7 @@ auth.post('/logout', sessionMiddleware, async (c) => {
     sameSite: 'Lax',
     path: '/',
     maxAge: 0,
+    domain: '.torium.app',
   });
 
   return c.json(success({ logged_out: true }));
