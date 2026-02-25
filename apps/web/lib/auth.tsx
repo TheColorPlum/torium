@@ -44,7 +44,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const response = await authApi.me();
-      setUser(response.user);
+      // API returns { data: { user, workspace } }
+      const userData = response.data?.user || response.user;
+      if (userData) {
+        setUser({
+          id: userData.id,
+          email: userData.email,
+          plan: (response.data?.workspace?.plan_type as 'free' | 'pro') || 'free',
+          createdAt: userData.created_at || userData.createdAt,
+        });
+      } else {
+        setUser(null);
+      }
       setError(null);
     } catch (err) {
       setUser(null);

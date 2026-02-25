@@ -77,7 +77,21 @@ export interface AuthRequestResponse {
 }
 
 export interface AuthVerifyResponse {
-  user: {
+  data: {
+    user: {
+      id: string;
+      email: string;
+      created_at: string;
+    };
+    workspace: {
+      id: string;
+      name: string;
+      plan_type: 'free' | 'pro';
+      created_at: string;
+    };
+  };
+  // Legacy format support
+  user?: {
     id: string;
     email: string;
     plan: 'free' | 'pro';
