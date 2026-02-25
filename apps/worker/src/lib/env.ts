@@ -10,6 +10,9 @@ export interface Env {
   // Queue binding for click ingestion
   CLICKS_QUEUE: Queue;
 
+  // Durable Object binding for workspace counters
+  WORKSPACE_COUNTER: DurableObjectNamespace;
+
   // Secrets (set via wrangler secret put)
   RESEND_API_KEY: string;
   SESSION_SECRET: string;

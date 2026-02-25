@@ -9,6 +9,17 @@ binding = "DB"
 database_name = "torium-db"
 database_id = "a0983129-1b80-4161-9257-9dd454bfb844"
 
+# Durable Object binding for workspace counters
+[durable_objects]
+bindings = [
+  { name = "WORKSPACE_COUNTER", class_name = "WorkspaceCounterDO" }
+]
+
+# DO migrations
+[[migrations]]
+tag = "v1"
+new_classes = ["WorkspaceCounterDO"]
+
 # Queue producer binding
 [[queues.producers]]
 binding = "CLICKS_QUEUE"

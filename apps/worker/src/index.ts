@@ -14,6 +14,9 @@ import { validateEnv, type Env } from './lib/env';
 import { handleClickBatch } from './consumers/clicks';
 import type { ClickEvent } from '@torium/shared';
 
+// Export Durable Object class
+export { WorkspaceCounterDO } from './do/workspace-counter';
+
 // Create Hono app with typed bindings
 const app = new Hono<{ Bindings: Env }>();
 

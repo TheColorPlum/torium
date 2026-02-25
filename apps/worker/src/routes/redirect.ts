@@ -6,6 +6,8 @@
  * - #1: Redirects must never break due to billing/analytics failures
  * - #2: Redirect requests must never synchronously write to D1
  * - #3: Redirects must be HTTP 302 with Cache-Control: no-store
+ * - #7: DO counters are authoritative for usage
+ * - #8: Free cap = tracking stops, redirect continues
  * - #12: Queue ingestion is best-effort; enqueue failures must not impact redirect
  */
 
@@ -14,6 +16,8 @@ import { error } from '@torium/shared';
 import type { ClickEvent } from '@torium/shared';
 import { resolveLink } from '../lib/resolve';
 import { generateClickId, hashIp } from '../lib/clicks';
+import { getWorkspacePlan } from '../lib/plan';
+import { FREE_MONTHLY_CAP } from '../lib/constants';
 import type { Env } from '../lib/env';
 
 export const redirect = new Hono<{ Bindings: Env }>();
@@ -44,61 +48,86 @@ redirect.get('/:slug', async (c) => {
     return c.json(error('NOT_FOUND', 'Link not found'), 404);
   }
 
-  // Build click event for queue
-  // Per SYSTEM_INVARIANTS #12: Best-effort, never block redirect
+  // Collect request data upfront for the async tracking
   const tsMs = Date.now();
   const ts = new Date(tsMs).toISOString();
-  
-  // Extract request details
   const userAgent = c.req.header('User-Agent');
-  const referrer = c.req.header('Referer'); // Note: header is "Referer" (misspelling is standard)
+  const referrer = c.req.header('Referer');
   const cfRay = c.req.header('CF-Ray');
-  
-  // Extract geo from Cloudflare request properties
   const cfProps = (c.req.raw as Request & { cf?: Record<string, unknown> }).cf || {};
   const country = cfProps.country as string | undefined;
   const region = cfProps.region as string | undefined;
   const city = cfProps.city as string | undefined;
-  
-  // Get client IP for hashing (never store raw)
   const clientIp = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For')?.split(',')[0]?.trim();
 
-  // Enqueue click event asynchronously (fire-and-forget)
-  // Per SYSTEM_INVARIANTS #12: enqueue failures must not impact redirect
+  // All tracking/counting is async via waitUntil - NEVER blocks redirect
+  // Per SYSTEM_INVARIANTS #1, #12: failures must not impact redirect
   c.executionCtx.waitUntil(
     (async () => {
       try {
-        // Generate deterministic click ID
-        const clickId = await generateClickId(result.link_id, tsMs, cfRay, userAgent);
-        
-        // Hash IP per SYSTEM_INVARIANTS #13
-        const ipHash = clientIp ? await hashIp(clientIp) : undefined;
+        // 1. Get workspace plan (cached, 60s TTL)
+        const plan = await getWorkspacePlan(c.env.DB, result.workspace_id);
 
-        const clickEvent: ClickEvent = {
-          click_id: clickId,
-          ts,
-          workspace_id: result.workspace_id,
-          link_id: result.link_id,
-          domain: hostname,
-          slug: result.slug,
-          destination_url: result.destination_url,
-          referrer,
-          user_agent: userAgent,
-          ip_hash: ipHash,
-          country,
-          region,
-          city,
-        };
+        // 2. Get DO stub for workspace counter
+        const counterId = c.env.WORKSPACE_COUNTER.idFromName(result.workspace_id);
+        const counterStub = c.env.WORKSPACE_COUNTER.get(counterId);
 
-        // Enqueue to CLICKS_QUEUE
-        await c.env.CLICKS_QUEUE.send(clickEvent);
+        // 3. Check cap and potentially increment
+        let shouldEnqueue = false;
+
+        if (plan === 'free') {
+          // Per SYSTEM_INVARIANTS #8: Free cap = tracking stops, redirect continues
+          const response = await counterStub.fetch(
+            new Request('http://do/incrementIfUnderCap', {
+              method: 'POST',
+              body: JSON.stringify({ cap: FREE_MONTHLY_CAP }),
+              headers: { 'Content-Type': 'application/json' },
+            })
+          );
+          const data = await response.json() as { incremented: boolean };
+          shouldEnqueue = data.incremented;
+        } else {
+          // Pro tier: unlimited tracking
+          await counterStub.fetch(
+            new Request('http://do/increment', {
+              method: 'POST',
+            })
+          );
+          shouldEnqueue = true;
+        }
+
+        // 4. Only enqueue if under cap (or Pro)
+        if (shouldEnqueue) {
+          const clickId = await generateClickId(result.link_id, tsMs, cfRay, userAgent);
+          const ipHash = clientIp ? await hashIp(clientIp) : undefined;
+
+          const clickEvent: ClickEvent = {
+            click_id: clickId,
+            ts,
+            workspace_id: result.workspace_id,
+            link_id: result.link_id,
+            domain: hostname,
+            slug: result.slug,
+            destination_url: result.destination_url,
+            referrer,
+            user_agent: userAgent,
+            ip_hash: ipHash,
+            country,
+            region,
+            city,
+          };
+
+          await c.env.CLICKS_QUEUE.send(clickEvent);
+        }
       } catch (err) {
-        // Log but never fail the redirect
-        console.error('Failed to enqueue click event:', err);
+        // Log but NEVER fail the redirect
+        // Per SYSTEM_INVARIANTS #1, #12
+        console.error('Failed to track click:', err);
       }
     })()
   );
 
   // Per SYSTEM_INVARIANTS #3: HTTP 302 with Cache-Control: no-store
+  // Redirect ALWAYS succeeds regardless of cap or tracking status
   return c.redirect(result.destination_url, 302);
 });
