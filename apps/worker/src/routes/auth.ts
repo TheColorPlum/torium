@@ -7,7 +7,7 @@
 
 import { Hono } from 'hono';
 import type { Context } from 'hono';
-import { setCookie } from 'hono/cookie';
+import { setCookie, getCookie } from 'hono/cookie';
 import { success, error } from '@torium/shared';
 import type { User, Workspace } from '@torium/shared';
 import {
@@ -335,6 +335,26 @@ auth.get('/debug-cookie', async (c) => {
     message: 'Debug cookie set',
     expectedDomain: '.torium.app',
     redirectUrl: c.env.APP_URL + '/debug',
+  });
+});
+
+/**
+ * GET /api/v1/auth/debug-check
+ * Debug endpoint to check if cookies are being received
+ */
+auth.get('/debug-check', async (c) => {
+  const sessionCookie = getCookie(c, SESSION_COOKIE_NAME);
+  const debugCookie = getCookie(c, 'torium_debug');
+  const allCookies = c.req.header('cookie');
+  
+  return c.json({
+    sessionCookiePresent: !!sessionCookie,
+    sessionCookieValue: sessionCookie ? sessionCookie.substring(0, 10) + '...' : null,
+    debugCookiePresent: !!debugCookie,
+    debugCookieValue: debugCookie,
+    rawCookieHeader: allCookies || '(no cookie header)',
+    origin: c.req.header('origin') || '(no origin)',
+    referer: c.req.header('referer') || '(no referer)',
   });
 });
 
