@@ -1,0 +1,19 @@
+{
+  "name": "torium",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @torium/worker dev",
+    "build": "pnpm --filter @torium/worker build",
+    "deploy": "pnpm --filter @torium/worker deploy",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

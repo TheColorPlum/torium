@@ -1,0 +1,33 @@
+# Torium Worker Configuration
+name = "torium-worker"
+main = "src/index.ts"
+compatibility_date = "2024-02-22"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "torium-db"
+database_id = "REPLACE_WITH_ACTUAL_DATABASE_ID"
+
+# Environment variables (secrets - set via `wrangler secret put`)
+# Required:
+#   RESEND_API_KEY - API key for Resend email service
+#   SESSION_SECRET - Secret for session token hashing
+#
+# Set using:
+#   wrangler secret put RESEND_API_KEY
+#   wrangler secret put SESSION_SECRET
+
+[vars]
+# Non-secret configuration
+APP_URL = "https://torium.app"
+MAGIC_LINK_EXPIRY_MINUTES = "15"
+SESSION_EXPIRY_DAYS = "30"
+
+# Development overrides
+[env.development]
+vars = { APP_URL = "http://localhost:8787" }
+
+# Preview environment
+[env.preview]
+vars = { APP_URL = "https://preview.torium.app" }

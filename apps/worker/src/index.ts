@@ -1,0 +1,82 @@
+/**
+ * Torium Worker Entry
+ * Cloudflare Worker serving API and redirects
+ */
+
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { logger } from 'hono/logger';
+import { success, error } from '@torium/shared';
+import { auth } from './routes/auth';
+import { validateEnv, type Env } from './lib/env';
+
+// Create Hono app with typed bindings
+const app = new Hono<{ Bindings: Env }>();
+
+// Global middleware
+app.use('*', logger());
+app.use(
+  '/api/*',
+  cors({
+    origin: (origin) => origin, // Allow requesting origin
+    credentials: true,
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
+  })
+);
+
+// Health check (no auth required)
+app.get('/health', (c) => {
+  return c.json(success({ status: 'ok', timestamp: new Date().toISOString() }));
+});
+
+// API version 1 routes
+const v1 = new Hono<{ Bindings: Env }>();
+
+// Mount auth routes
+v1.route('/auth', auth);
+
+// API info endpoint
+v1.get('/', (c) => {
+  return c.json(
+    success({
+      name: 'Torium API',
+      version: 'v1',
+      docs: 'https://torium.app/docs/api',
+    })
+  );
+});
+
+// Mount v1 under /api/v1
+app.route('/api/v1', v1);
+
+// Global 404 handler
+app.notFound((c) => {
+  return c.json(error('NOT_FOUND', 'Resource not found'), 404);
+});
+
+// Global error handler
+app.onError((err, c) => {
+  console.error('Unhandled error:', err);
+  return c.json(error('INTERNAL_ERROR', 'An unexpected error occurred'), 500);
+});
+
+// Export worker
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    // Validate environment on first request (will throw if missing vars)
+    try {
+      validateEnv(env);
+    } catch (e) {
+      console.error('Environment validation failed:', e);
+      return new Response(
+        JSON.stringify({
+          error: { code: 'INTERNAL_ERROR', message: 'Server configuration error' },
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return app.fetch(request, env, ctx);
+  },
+};

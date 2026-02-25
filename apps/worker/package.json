@@ -1,0 +1,23 @@
+{
+  "name": "@torium/worker",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler build",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "migrate:local": "wrangler d1 execute torium-db --local --file=./migrations/0001_foundation.sql",
+    "migrate:remote": "wrangler d1 execute torium-db --file=./migrations/0001_foundation.sql"
+  },
+  "dependencies": {
+    "@torium/shared": "workspace:*",
+    "hono": "^4.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240222.0",
+    "typescript": "^5.4.0",
+    "wrangler": "^3.32.0"
+  }
+}

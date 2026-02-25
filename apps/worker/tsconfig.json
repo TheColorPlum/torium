@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "types": ["@cloudflare/workers-types"],
+    "moduleResolution": "bundler",
+    "paths": {
+      "@torium/shared": ["../../packages/shared/types/index.ts"],
+      "@torium/shared/*": ["../../packages/shared/types/*"]
+    }
+  },
+  "include": ["src/**/*", "../../packages/shared/types/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
