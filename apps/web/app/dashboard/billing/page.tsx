@@ -88,7 +88,7 @@ export default function BillingPage() {
                   Torium Pro
                 </h3>
                 <p className="text-text-secondary">
-                  $19/month • Unlimited links • 2M tracked clicks/month
+                  $50/month • Unlimited links • 2M tracked clicks/month
                 </p>
               </div>
 
@@ -208,7 +208,7 @@ export default function BillingPage() {
                 <div className="flex items-center gap-2 mb-4">
                   <PlanBadge plan="pro" />
                   <span className="text-lg font-semibold text-text-primary">Pro</span>
-                  <span className="text-text-secondary">$19/mo</span>
+                  <span className="text-text-secondary">$50/mo</span>
                 </div>
                 <ul className="space-y-3">
                   <FeatureItem included>2,000,000 tracked clicks/month</FeatureItem>

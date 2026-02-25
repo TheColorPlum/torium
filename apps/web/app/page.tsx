@@ -69,7 +69,7 @@ const pricingPlans = [
   },
   {
     name: 'Pro',
-    price: '$19',
+    price: '$50',
     period: '/month',
     description: 'For growing businesses',
     features: [
