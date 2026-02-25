@@ -23,7 +23,8 @@ export interface Env {
   STRIPE_PRO_PRICE_ID: string;
 
   // Configuration vars
-  APP_URL: string;
+  APP_URL: string; // Web app URL (for redirects after auth)
+  API_URL: string; // Worker/API URL (for magic link verification)
   MAGIC_LINK_EXPIRY_MINUTES: string;
   SESSION_EXPIRY_DAYS: string;
 }

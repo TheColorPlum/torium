@@ -66,8 +66,8 @@ auth.post('/request', async (c) => {
     .bind(magicLinkId, normalizedEmail, tokenHash, expiresAt, now())
     .run();
 
-  // Build verify URL
-  const verifyUrl = `${c.env.APP_URL}/api/v1/auth/verify?token=${encodeURIComponent(token)}`;
+  // Build verify URL - use API_URL (worker) for the verification endpoint
+  const verifyUrl = `${c.env.API_URL}/api/v1/auth/verify?token=${encodeURIComponent(token)}`;
 
   // Send email
   const { html, text } = generateMagicLinkEmail(verifyUrl);

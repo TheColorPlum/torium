@@ -48,7 +48,8 @@ max_batch_timeout = 30
 
 [vars]
 # Non-secret configuration
-APP_URL = "https://torium.app"
+APP_URL = "https://app.torium.app"  # Web app URL (for redirects after auth)
+API_URL = "https://torium.app"      # Worker/API URL (for magic link verification)
 MAGIC_LINK_EXPIRY_MINUTES = "15"
 SESSION_EXPIRY_DAYS = "30"
 
@@ -63,8 +64,8 @@ crons = [
 
 # Development overrides
 [env.development]
-vars = { APP_URL = "http://localhost:8787" }
+vars = { APP_URL = "http://localhost:3000", API_URL = "http://localhost:8787" }
 
 # Preview environment
 [env.preview]
-vars = { APP_URL = "https://preview.torium.app" }
+vars = { APP_URL = "https://preview-app.torium.app", API_URL = "https://preview.torium.app" }
