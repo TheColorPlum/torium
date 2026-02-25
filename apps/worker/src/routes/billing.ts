@@ -212,34 +212,29 @@ billing.post('/webhooks', async (c) => {
 /**
  * Handle checkout.session.completed
  * Set plan_type='pro' and store subscription info
+ * 
+ * Note: checkout.session.completed doesn't include period dates.
+ * The subsequent customer.subscription.created/updated event will set the period
+ * and call DO.setProPeriod. For now, we just mark as Pro.
  */
 async function handleCheckoutCompleted(env: Env, session: StripeCheckoutSessionCompleted): Promise<void> {
   console.log(`[Webhook] Checkout completed for customer ${session.customer}`);
 
   // Find workspace by customer ID
+  let workspaceId: string | null = null;
+  
   const workspace = await env.DB.prepare(
     'SELECT id FROM workspaces WHERE stripe_customer_id = ?'
   ).bind(session.customer).first<{ id: string }>();
 
-  if (!workspace) {
+  if (workspace) {
+    workspaceId = workspace.id;
+  } else {
     // Try metadata fallback
-    const workspaceId = session.metadata?.workspace_id;
-    if (workspaceId) {
-      await env.DB.prepare(`
-        UPDATE workspaces SET
-          stripe_customer_id = ?,
-          stripe_subscription_id = ?,
-          plan_type = 'pro',
-          billing_status = 'active'
-        WHERE id = ?
-      `).bind(session.customer, session.subscription, workspaceId).run();
+    workspaceId = session.metadata?.workspace_id || null;
+  }
 
-      // Invalidate plan cache
-      invalidatePlanCache(workspaceId);
-      console.log(`[Webhook] Upgraded workspace ${workspaceId} to Pro via metadata`);
-      return;
-    }
-
+  if (!workspaceId) {
     console.error(`[Webhook] No workspace found for customer ${session.customer}`);
     return;
   }
@@ -247,15 +242,19 @@ async function handleCheckoutCompleted(env: Env, session: StripeCheckoutSessionC
   // Update workspace to Pro
   await env.DB.prepare(`
     UPDATE workspaces SET
+      stripe_customer_id = ?,
       stripe_subscription_id = ?,
       plan_type = 'pro',
       billing_status = 'active'
     WHERE id = ?
-  `).bind(session.subscription, workspace.id).run();
+  `).bind(session.customer, session.subscription, workspaceId).run();
 
   // Invalidate plan cache
-  invalidatePlanCache(workspace.id);
-  console.log(`[Webhook] Upgraded workspace ${workspace.id} to Pro`);
+  invalidatePlanCache(workspaceId);
+  console.log(`[Webhook] Upgraded workspace ${workspaceId} to Pro`);
+  
+  // Note: DO.setProPeriod will be called by customer.subscription.updated event
+  // which fires immediately after checkout completion with period dates
 }
 
 /**
@@ -295,6 +294,8 @@ async function handleSubscriptionUpdated(env: Env, subscription: StripeSubscript
 
 /**
  * Helper to update subscription data on workspace
+ * 
+ * CRITICAL: Must call DO.setProPeriod to reset Pro counter for new billing period
  */
 async function updateSubscriptionData(env: Env, workspaceId: string, subscription: StripeSubscription): Promise<void> {
   // Convert Unix timestamps to ISO 8601
@@ -320,6 +321,30 @@ async function updateSubscriptionData(env: Env, workspaceId: string, subscriptio
       billing_status = ?
     WHERE id = ?
   `).bind(priceId, periodStart, periodEnd, billingStatus, workspaceId).run();
+
+  // CRITICAL: Update DO with new billing period to reset Pro counter
+  // Per SYSTEM_INVARIANTS #9: Pro counters reset when subscription period changes
+  if (subscription.status === 'active' || subscription.status === 'trialing') {
+    try {
+      const doId = env.WORKSPACE_COUNTER.idFromName(workspaceId);
+      const stub = env.WORKSPACE_COUNTER.get(doId);
+      
+      const response = await stub.fetch(new Request('http://do/setProPeriod', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ start: periodStart, end: periodEnd }),
+      }));
+
+      if (!response.ok) {
+        console.error(`[Webhook] Failed to set Pro period for workspace ${workspaceId}:`, await response.text());
+      } else {
+        console.log(`[Webhook] Set Pro period for workspace ${workspaceId}: ${periodStart} - ${periodEnd}`);
+      }
+    } catch (err) {
+      console.error(`[Webhook] Error setting Pro period for workspace ${workspaceId}:`, err);
+      // Don't throw - the DB is updated, DO sync can be retried
+    }
+  }
 
   // Invalidate plan cache
   invalidatePlanCache(workspaceId);

@@ -104,13 +104,18 @@ async function processWorkspaceUsage(
 ): Promise<{ billed: boolean }> {
   console.log(`[UsageReporting] Processing workspace ${workspace.id}`);
 
-  // Get click count from DO counter
+  // Get click count from DO counter (Pro usage, not Free)
   // INVARIANT #7, #10: Billing reads DO counters only
+  // INVARIANT #9: Pro counters are separate from Free counters
   const doId = env.WORKSPACE_COUNTER.idFromName(workspace.id);
   const stub = env.WORKSPACE_COUNTER.get(doId);
   
-  const usageResponse = await stub.fetch(new Request('http://do/usage', { method: 'GET' }));
-  const usageData = await usageResponse.json() as { tracked_clicks: number; month_key: string };
+  const usageResponse = await stub.fetch(new Request('http://do/proUsage', { method: 'GET' }));
+  const usageData = await usageResponse.json() as { 
+    tracked_clicks: number; 
+    period_start: string | null; 
+    period_end: string | null;
+  };
 
   const totalClicks = usageData.tracked_clicks;
   console.log(`[UsageReporting] Workspace ${workspace.id} has ${totalClicks} clicks`);
@@ -209,11 +214,12 @@ export async function getUsageSummary(
     };
   }
 
-  // Get current click count from DO
+  // Get current click count from DO (Pro usage for Pro workspaces)
+  // INVARIANT #9: Pro counters are separate from Free counters
   const doId = env.WORKSPACE_COUNTER.idFromName(workspaceId);
   const stub = env.WORKSPACE_COUNTER.get(doId);
   
-  const usageResponse = await stub.fetch(new Request('http://do/usage', { method: 'GET' }));
+  const usageResponse = await stub.fetch(new Request('http://do/proUsage', { method: 'GET' }));
   const usageData = await usageResponse.json() as { tracked_clicks: number };
 
   const currentClicks = usageData.tracked_clicks;

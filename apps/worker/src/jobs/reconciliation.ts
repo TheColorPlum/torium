@@ -72,24 +72,27 @@ export async function runReconciliation(env: Env): Promise<{ checked: number; mi
 
   for (const period of rows) {
     try {
-      // Get DO counter state
+      // Get DO counter state (Pro usage for billing reconciliation)
+      // INVARIANT #9: Pro counters are separate from Free counters
       const doId = env.WORKSPACE_COUNTER.idFromName(period.workspace_id);
       const stub = env.WORKSPACE_COUNTER.get(doId);
       
-      const usageResponse = await stub.fetch(new Request('http://do/usage', { method: 'GET' }));
-      const usageData = await usageResponse.json() as { tracked_clicks: number; month_key: string };
+      const usageResponse = await stub.fetch(new Request('http://do/proUsage', { method: 'GET' }));
+      const usageData = await usageResponse.json() as { 
+        tracked_clicks: number; 
+        period_start: string | null;
+        period_end: string | null;
+      };
 
       checked++;
 
-      // Extract month from period_end to compare with DO month_key
-      const periodMonth = period.period_end.substring(0, 7); // YYYY-MM
-
-      // Only compare if the DO's month_key matches the period's month
-      // (DO resets each month, so old periods can't be validated)
-      if (usageData.month_key !== periodMonth) {
+      // Only compare if the DO's period matches the recorded period
+      // (DO resets when period changes, so old periods can't be validated)
+      if (usageData.period_start !== period.period_start || usageData.period_end !== period.period_end) {
         console.log(
           `[Reconciliation] Skipping workspace ${period.workspace_id}: ` +
-          `DO month (${usageData.month_key}) != period month (${periodMonth})`
+          `DO period (${usageData.period_start} - ${usageData.period_end}) != ` +
+          `recorded period (${period.period_start} - ${period.period_end})`
         );
         continue;
       }
