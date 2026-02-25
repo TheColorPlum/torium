@@ -1,5 +1,6 @@
 import { LandingHero } from '@/components/landing/hero';
-import { Button, Card, CardContent } from '@/components/ui';
+import { Card, CardContent } from '@/components/ui';
+import { cn } from '@/lib/cn';
 
 // Placeholder icons
 function LinkIcon() {
@@ -199,9 +200,17 @@ export default function LandingPage() {
                       ))}
                     </ul>
 
-                    <Button variant={plan.ctaVariant} className="w-full" asChild>
-                      <a href="/login">{plan.cta}</a>
-                    </Button>
+                    <a
+                      href="/login"
+                      className={cn(
+                        "inline-flex items-center justify-center font-medium rounded-sm transition-colors duration-150 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 text-sm px-4 py-2 w-full",
+                        plan.ctaVariant === 'primary'
+                          ? "bg-accent-500 text-text-inverse hover:bg-accent-600 focus:ring-accent-ring"
+                          : "bg-bg border border-border text-text-primary hover:bg-bg-secondary focus:ring-accent-ring"
+                      )}
+                    >
+                      {plan.cta}
+                    </a>
                   </CardContent>
                 </Card>
               ))}

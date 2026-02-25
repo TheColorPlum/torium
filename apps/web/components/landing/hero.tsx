@@ -9,8 +9,6 @@
  * DO NOT use these patterns anywhere else in the app.
  */
 
-import { Button } from '@/components/ui';
-
 export function LandingHero() {
   return (
     <section className="relative overflow-hidden">
@@ -48,12 +46,18 @@ export function LandingHero() {
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" asChild>
-              <a href="/login">Get started free</a>
-            </Button>
-            <Button variant="secondary" size="lg" asChild>
-              <a href="#pricing">See pricing</a>
-            </Button>
+            <a
+              href="/login"
+              className="inline-flex items-center justify-center font-medium rounded-sm transition-colors duration-150 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 text-base px-6 py-3 bg-accent-500 text-text-inverse hover:bg-accent-600 focus:ring-accent-ring"
+            >
+              Get started free
+            </a>
+            <a
+              href="#pricing"
+              className="inline-flex items-center justify-center font-medium rounded-sm transition-colors duration-150 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 text-base px-6 py-3 bg-bg border border-border text-text-primary hover:bg-bg-secondary focus:ring-accent-ring"
+            >
+              See pricing
+            </a>
           </div>
 
           <p className="mt-4 text-sm text-text-tertiary">
