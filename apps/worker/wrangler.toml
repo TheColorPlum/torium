@@ -35,10 +35,16 @@ max_batch_timeout = 30
 # Required:
 #   RESEND_API_KEY - API key for Resend email service
 #   SESSION_SECRET - Secret for session token hashing
+#   STRIPE_SECRET_KEY - Stripe API secret key (sk_live_xxx or sk_test_xxx)
+#   STRIPE_WEBHOOK_SECRET - Stripe webhook signing secret (whsec_xxx)
+#   STRIPE_PRO_PRICE_ID - Stripe price ID for Pro plan (price_xxx)
 #
 # Set using:
 #   wrangler secret put RESEND_API_KEY
 #   wrangler secret put SESSION_SECRET
+#   wrangler secret put STRIPE_SECRET_KEY
+#   wrangler secret put STRIPE_WEBHOOK_SECRET
+#   wrangler secret put STRIPE_PRO_PRICE_ID
 
 [vars]
 # Non-secret configuration
@@ -50,7 +56,9 @@ SESSION_EXPIRY_DAYS = "30"
 [triggers]
 crons = [
   "*/5 * * * *",   # Aggregation: every 5 minutes
-  "0 3 * * *"      # Retention: daily at 3 AM UTC
+  "0 3 * * *",     # Retention: daily at 3 AM UTC
+  "0 4 * * *",     # Usage reporting (billing): daily at 4 AM UTC
+  "0 5 * * *"      # Reconciliation: daily at 5 AM UTC
 ]
 
 # Development overrides

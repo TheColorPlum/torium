@@ -48,7 +48,12 @@ export type ApiErrorCode =
   | 'TOKEN_EXPIRED'
   | 'TOKEN_INVALID'
   | 'TOKEN_CONSUMED'
-  | 'EMAIL_SEND_FAILED';
+  | 'EMAIL_SEND_FAILED'
+  // Billing error codes
+  | 'ALREADY_PRO'
+  | 'STRIPE_ERROR'
+  | 'NO_CUSTOMER'
+  | 'INVALID_SIGNATURE';
 
 /**
  * Type guard for error responses

@@ -10,11 +10,14 @@ import { success, error } from '@torium/shared';
 import { auth } from './routes/auth';
 import { links } from './routes/links';
 import { analytics } from './routes/analytics';
+import { billing } from './routes/billing';
 import { redirect } from './routes/redirect';
 import { validateEnv, type Env } from './lib/env';
 import { handleClickBatch } from './consumers/clicks';
 import { runAggregation } from './jobs/aggregation';
 import { runRetention } from './jobs/retention';
+import { runUsageReporting } from './jobs/usage-reporting';
+import { runReconciliation } from './jobs/reconciliation';
 import type { ClickEvent } from '@torium/shared';
 
 // Export Durable Object class
@@ -51,6 +54,9 @@ v1.route('/links', links);
 
 // Mount analytics routes
 v1.route('/analytics', analytics);
+
+// Mount billing routes
+v1.route('/billing', billing);
 
 // API info endpoint
 v1.get('/', (c) => {
@@ -105,7 +111,7 @@ export default {
     await handleClickBatch(batch, env);
   },
 
-  // Scheduled handler for cron triggers (aggregation + retention)
+  // Scheduled handler for cron triggers (aggregation + retention + billing)
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     console.log(`[Scheduled] Cron trigger: ${event.cron}`);
 
@@ -122,6 +128,22 @@ export default {
         ctx.waitUntil(
           runRetention(env).catch((err) => {
             console.error('[Scheduled] Retention failed:', err);
+          })
+        );
+        break;
+
+      case '0 4 * * *': // Daily at 4 AM UTC - usage reporting (billing)
+        ctx.waitUntil(
+          runUsageReporting(env).catch((err) => {
+            console.error('[Scheduled] Usage reporting failed:', err);
+          })
+        );
+        break;
+
+      case '0 5 * * *': // Daily at 5 AM UTC - reconciliation
+        ctx.waitUntil(
+          runReconciliation(env).catch((err) => {
+            console.error('[Scheduled] Reconciliation failed:', err);
           })
         );
         break;

@@ -17,6 +17,11 @@ export interface Env {
   RESEND_API_KEY: string;
   SESSION_SECRET: string;
 
+  // Stripe secrets (set via wrangler secret put)
+  STRIPE_SECRET_KEY: string;
+  STRIPE_WEBHOOK_SECRET: string;
+  STRIPE_PRO_PRICE_ID: string;
+
   // Configuration vars
   APP_URL: string;
   MAGIC_LINK_EXPIRY_MINUTES: string;

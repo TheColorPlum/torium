@@ -8,14 +8,18 @@
  * - #3: Redirects must be HTTP 302 with Cache-Control: no-store
  * - #7: DO counters are authoritative for usage
  * - #8: Free cap = tracking stops, redirect continues
+ * - #9: Free month counters and Pro period counters are separate state
  * - #12: Queue ingestion is best-effort; enqueue failures must not impact redirect
+ * 
+ * Per SYSTEM_CONTRACT:
+ * - Bot traffic excluded from billing (skip DO increment for suspected bots)
  */
 
 import { Hono } from 'hono';
 import { error } from '@torium/shared';
 import type { ClickEvent } from '@torium/shared';
 import { resolveLink } from '../lib/resolve';
-import { generateClickId, hashIp } from '../lib/clicks';
+import { generateClickId, hashIp, isBotSuspected } from '../lib/clicks';
 import { getWorkspacePlan } from '../lib/plan';
 import { FREE_MONTHLY_CAP } from '../lib/constants';
 import type { Env } from '../lib/env';
@@ -65,6 +69,17 @@ redirect.get('/:slug', async (c) => {
   c.executionCtx.waitUntil(
     (async () => {
       try {
+        // 0. Check for bot traffic FIRST - skip DO increment entirely for bots
+        // Per SYSTEM_CONTRACT: Bot traffic excluded from billing
+        const isBot = isBotSuspected(userAgent);
+        
+        if (isBot) {
+          // Bot traffic: do not count toward usage, do not enqueue analytics
+          // This prevents bots from inflating usage metrics and billing
+          console.log(`Bot detected for ${hostname}/${slug}, skipping tracking`);
+          return;
+        }
+
         // 1. Get workspace plan (cached, 60s TTL)
         const plan = await getWorkspacePlan(c.env.DB, result.workspace_id);
 
@@ -72,13 +87,13 @@ redirect.get('/:slug', async (c) => {
         const counterId = c.env.WORKSPACE_COUNTER.idFromName(result.workspace_id);
         const counterStub = c.env.WORKSPACE_COUNTER.get(counterId);
 
-        // 3. Check cap and potentially increment
+        // 3. Check cap and potentially increment based on plan
         let shouldEnqueue = false;
 
         if (plan === 'free') {
-          // Per SYSTEM_INVARIANTS #8: Free cap = tracking stops, redirect continues
+          // Per SYSTEM_INVARIANTS #8, #9: Free cap = tracking stops, uses free_tracked_clicks
           const response = await counterStub.fetch(
-            new Request('http://do/incrementIfUnderCap', {
+            new Request('http://do/incrementFreeIfUnderCap', {
               method: 'POST',
               body: JSON.stringify({ cap: FREE_MONTHLY_CAP }),
               headers: { 'Content-Type': 'application/json' },
@@ -87,9 +102,10 @@ redirect.get('/:slug', async (c) => {
           const data = await response.json() as { incremented: boolean };
           shouldEnqueue = data.incremented;
         } else {
-          // Pro tier: unlimited tracking
+          // Pro tier: unlimited tracking, uses pro_tracked_clicks
+          // Per SYSTEM_INVARIANTS #9: Pro period counters are separate from free
           await counterStub.fetch(
-            new Request('http://do/increment', {
+            new Request('http://do/incrementPro', {
               method: 'POST',
             })
           );
