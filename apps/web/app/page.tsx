@@ -100,7 +100,9 @@ export default function LandingPage() {
             <a href="#pricing" className="text-sm text-text-secondary hover:text-text-primary transition-colors duration-150">
               Pricing
             </a>
-            <Button variant="secondary" size="sm">Sign in</Button>
+            <Button variant="secondary" size="sm" asChild>
+              <a href="/login">Sign in</a>
+            </Button>
           </nav>
         </div>
       </header>
@@ -109,15 +111,22 @@ export default function LandingPage() {
         {/* Hero */}
         <LandingHero />
 
+        {/* Transition line */}
+        <div className="py-12 text-center bg-bg">
+          <p className="text-lg text-text-secondary max-w-2xl mx-auto px-6">
+            Built for small teams who want clarity, not complexity.
+          </p>
+        </div>
+
         {/* Features */}
         <section id="features" className="py-20 sm:py-24 bg-bg-secondary">
           <div className="max-w-5xl mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="text-3xl sm:text-4xl font-bold text-text-primary">
-                Everything you need
+                What small teams actually need
               </h2>
               <p className="mt-4 text-lg text-text-secondary">
-                Simple tools to create, share, and track your links
+                Short links, QR codes, and analytics — nothing more.
               </p>
             </div>
 
@@ -146,7 +155,7 @@ export default function LandingPage() {
           <div className="max-w-5xl mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="text-3xl sm:text-4xl font-bold text-text-primary">
-                Simple, transparent pricing
+                Pricing you can understand in 10 seconds.
               </h2>
               <p className="mt-4 text-lg text-text-secondary">
                 No surprises. Pay only for what you use.
@@ -187,13 +196,17 @@ export default function LandingPage() {
                       ))}
                     </ul>
 
-                    <Button variant={plan.ctaVariant} className="w-full">
-                      {plan.cta}
+                    <Button variant={plan.ctaVariant} className="w-full" asChild>
+                      <a href="/login">{plan.cta}</a>
                     </Button>
                   </CardContent>
                 </Card>
               ))}
             </div>
+
+            <p className="mt-10 text-center text-sm text-text-tertiary max-w-xl mx-auto">
+              No sales calls. No usage cliffs. No enterprise negotiations. Pricing that scales linearly.
+            </p>
           </div>
         </section>
       </main>
