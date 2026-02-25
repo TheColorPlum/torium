@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint && pnpm run lint:guardrails",
+    "lint": "next lint && node ./scripts/check-guardrails.js",
     "lint:guardrails": "node ./scripts/check-guardrails.js",
     "typecheck": "tsc --noEmit"
   },
