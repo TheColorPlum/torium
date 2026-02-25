@@ -316,3 +316,41 @@ auth.get('/me', sessionMiddleware, async (c) => {
 });
 
 export { auth };
+
+/**
+ * GET /api/v1/auth/debug-cookie
+ * Debug endpoint to test cookie setting
+ */
+auth.get('/debug-cookie', async (c) => {
+  setCookie(c, 'torium_debug', 'test_value_123', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'Lax',
+    path: '/',
+    maxAge: 300, // 5 minutes
+    domain: '.torium.app',
+  });
+  
+  return c.json({
+    message: 'Debug cookie set',
+    expectedDomain: '.torium.app',
+    redirectUrl: c.env.APP_URL + '/debug',
+  });
+});
+
+/**
+ * GET /api/v1/auth/debug-redirect
+ * Debug endpoint to test cookie + redirect
+ */
+auth.get('/debug-redirect', async (c) => {
+  setCookie(c, 'torium_debug', 'test_value_redirect', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'Lax',
+    path: '/',
+    maxAge: 300,
+    domain: '.torium.app',
+  });
+  
+  return c.redirect(c.env.APP_URL + '/debug');
+});
