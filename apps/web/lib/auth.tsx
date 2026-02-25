@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: userData.id,
           email: userData.email,
           plan: (response.data?.workspace?.plan_type as 'free' | 'pro') || 'free',
-          createdAt: userData.created_at || userData.createdAt,
+          createdAt: userData.created_at,
         });
       } else {
         setUser(null);
