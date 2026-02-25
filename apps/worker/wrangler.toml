@@ -15,10 +15,10 @@ bindings = [
   { name = "WORKSPACE_COUNTER", class_name = "WorkspaceCounterDO" }
 ]
 
-# DO migrations
+# DO migrations - using new_sqlite_classes for free plan compatibility
 [[migrations]]
 tag = "v1"
-new_classes = ["WorkspaceCounterDO"]
+new_sqlite_classes = ["WorkspaceCounterDO"]
 
 # Queue producer binding
 [[queues.producers]]
