@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torium — Small, sharp tools for an agent-native world</title>
+    <meta name="description" content="Small, sharp tools that do one thing perfectly. Built for an agent-native world.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #111111;
+            --secondary-color: #888888;
+            --hairline: #e5e5e5;
+            --accent: #8E4585;
+            --accent-hover: #A855A8;
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+            --pad: 24px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            cursor: none; 
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Custom Cursor */
+        #cursor-dot,
+        #cursor-outline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none;
+            mix-blend-mode: difference;
+        }
+
+        #cursor-dot {
+            width: 6px;
+            height: 6px;
+            background-color: white;
+        }
+
+        #cursor-outline {
+            width: 40px;
+            height: 40px;
+            border: 1px solid white;
+            transition: width 0.2s, height 0.2s;
+        }
+
+        /* Corner Index */
+        .corner-index {
+            position: fixed;
+            font-family: var(--font-main);
+            font-weight: 500;
+            font-size: 2.5rem;
+            line-height: 1;
+            z-index: 1000;
+            color: var(--text-color);
+            transition: color 0.3s ease;
+        }
+
+        .corner-index:hover {
+            color: var(--accent);
+        }
+
+        .tl { top: var(--pad); left: var(--pad); }
+        .tr { top: var(--pad); right: var(--pad); }
+        .bl { bottom: var(--pad); left: var(--pad); }
+        .br { bottom: var(--pad); right: var(--pad); }
+
+        /* Canvas Zone */
+        #canvas-zone {
+            position: relative;
+            height: 70vh;
+            width: 100%;
+            overflow: hidden;
+            border-bottom: 1px solid var(--hairline);
+        }
+
+        #ascii-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Panel Zone */
+        #panel-zone {
+            height: 30vh;
+            width: 100%;
+            padding: var(--pad);
+            display: grid;
+            grid-template-columns: 2fr 1.5fr 1fr;
+            gap: 40px;
+            align-content: start;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        h1, h2, h3 {
+            font-weight: 500;
+            letter-spacing: -0.02em;
+        }
+
+        .panel-col {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .meta-line {
+            display: flex;
+            gap: 12px;
+            color: var(--secondary-color);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .bio-text {
+            max-width: 400px;
+            color: var(--text-color);
+        }
+
+        .link-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .link-list a {
+            text-decoration: none;
+            color: var(--text-color);
+            position: relative;
+            display: inline-block;
+            width: fit-content;
+        }
+
+        .link-list a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .link-list a:hover::after {
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+
+        .link-list a:hover {
+            color: var(--accent);
+        }
+
+        .colophon {
+            margin-top: 24px;
+            color: var(--secondary-color);
+            font-size: 0.75rem;
+        }
+
+        .telemetry {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--secondary-color);
+            text-align: right;
+            margin-top: auto;
+        }
+
+        /* Hero Text */
+        .hero-text {
+            position: absolute;
+            bottom: 24px;
+            left: var(--pad);
+            pointer-events: auto;
+        }
+
+        .hero-headline {
+            font-size: 3rem;
+            font-weight: 400;
+            letter-spacing: -0.03em;
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+
+        .hero-subline {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+        }
+
+        /* Navigation Overlay */
+        #nav-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #nav-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .nav-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            text-align: center;
+        }
+
+        .nav-item {
+            font-size: 3rem;
+            font-weight: 300;
+            color: #ccc;
+            cursor: pointer;
+            transition: color 0.3s;
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            color: var(--accent);
+        }
+
+        /* Text Scramble */
+        .scramble-hover {
+            display: inline-block;
+        }
+        
+        /* Mobile */
+        @media (max-width: 768px) {
+            #panel-zone {
+                grid-template-columns: 1fr;
+                height: auto;
+                min-height: 30vh;
+                padding-bottom: 48px;
+            }
+            .corner-index {
+                font-size: 1.5rem;
+            }
+            .hero-headline {
+                font-size: 2rem;
+            }
+            body {
+                height: auto;
+                overflow: auto;
+            }
+            #canvas-zone {
+                height: 60vh;
+            }
+            .telemetry {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Custom Cursor -->
+    <div id="cursor-dot"></div>
+    <div id="cursor-outline"></div>
+
+    <!-- Corner Indices -->
+    <div class="corner-index tl trigger-nav">T</div>
+    <div class="corner-index tr trigger-nav">O</div>
+    <div class="corner-index bl">0</div>
+    <div class="corner-index br">1</div>
+
+    <!-- Navigation Overlay -->
+    <div id="nav-overlay">
+        <div class="nav-content">
+            <a href="#products" class="nav-item trigger-nav-close">Products</a>
+            <a href="#about" class="nav-item trigger-nav-close">About</a>
+            <div class="nav-item trigger-nav-close">Close</div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Canvas Zone -->
+        <div id="canvas-zone">
+            <canvas id="ascii-canvas"></canvas>
+            <div class="hero-text">
+                <div class="hero-headline scramble-target">Small, sharp tools.<br>One thing, perfectly.</div>
+                <div class="hero-subline">Built for an agent-native world.</div>
+            </div>
+        </div>
+
+        <!-- Panel Zone -->
+        <div id="panel-zone">
+            <!-- Bio Column -->
+            <div class="panel-col">
+                <div>
+                    <div class="meta-line">
+                        <span>Torium</span>
+                        <span id="timestamp">--:--:--</span>
+                    </div>
+                    <p class="bio-text scramble-body">
+                        Software should do one thing and do it well. We build small, focused tools — no bloat, no feature creep.
+                    </p>
+                </div>
+                <div style="font-size: 0.8rem; color: #666; margin-top: auto;">
+                    Coming soon: Link shortening that doesn't suck.
+                </div>
+            </div>
+
+            <!-- Links Column -->
+            <div class="panel-col">
+                <ul class="link-list">
+                    <li><a href="mailto:hello@torium.app">Contact</a></li>
+                    <li><a href="https://github.com/TheColorPlum/torium" target="_blank">GitHub</a></li>
+                </ul>
+                <div class="colophon">
+                    Typeface: Inter & SF Mono.
+                </div>
+            </div>
+
+            <!-- Telemetry Column -->
+            <div class="panel-col" style="text-align: right; justify-content: space-between;">
+                <div style="font-size: 0.75rem;">© 2026</div>
+                <div class="telemetry">
+                    RENDER: <span id="render-ms">0.0</span>ms<br>
+                    X: <span id="mouse-x">0</span> Y: <span id="mouse-y">0</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Custom Cursor
+        const cursorDot = document.getElementById('cursor-dot');
+        const cursorOutline = document.getElementById('cursor-outline');
+        const mousePos = { x: 0, y: 0 };
+        const cursorLink = { x: 0, y: 0 };
+
+        window.addEventListener('mousemove', (e) => {
+            mousePos.x = e.clientX;
+            mousePos.y = e.clientY;
+            
+            document.getElementById('mouse-x').textContent = e.clientX;
+            document.getElementById('mouse-y').textContent = e.clientY;
+
+            cursorDot.style.left = `${e.clientX}px`;
+            cursorDot.style.top = `${e.clientY}px`;
+        });
+
+        const loopCursor = () => {
+            const dx = mousePos.x - cursorLink.x;
+            const dy = mousePos.y - cursorLink.y;
+            cursorLink.x += dx * 0.15;
+            cursorLink.y += dy * 0.15;
+            
+            cursorOutline.style.left = `${cursorLink.x}px`;
+            cursorOutline.style.top = `${cursorLink.y}px`;
+            
+            requestAnimationFrame(loopCursor);
+        };
+        loopCursor();
+
+        // Timestamp
+        const updateTime = () => {
+            const now = new Date();
+            document.getElementById('timestamp').textContent = now.toLocaleTimeString('en-US', { hour12: false }) + " UTC";
+        };
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Navigation Overlay
+        const navOverlay = document.getElementById('nav-overlay');
+        const triggers = document.querySelectorAll('.trigger-nav');
+        const closers = document.querySelectorAll('.trigger-nav-close');
+
+        triggers.forEach(el => el.addEventListener('click', () => {
+            navOverlay.classList.add('active');
+        }));
+        
+        closers.forEach(el => el.addEventListener('click', () => {
+            navOverlay.classList.remove('active');
+        }));
+        navOverlay.addEventListener('click', (e) => {
+            if(e.target === navOverlay) navOverlay.classList.remove('active');
+        });
+
+        // Text Scramble Class
+        class TextScramble {
+            constructor(el) {
+                this.el = el;
+                this.chars = '!<>-_\\/[]{}—=+*^?#________';
+                this.originalText = el.innerText;
+                this.frameRequest = null;
+                this.frame = 0;
+                this.queue = [];
+                
+                this.el.addEventListener('mouseenter', () => this.setText(this.originalText));
+                this.el.addEventListener('mouseleave', () => {
+                    setTimeout(() => this.setText(this.originalText), 200);
+                });
+            }
+
+            setText(newText) {
+                const oldText = this.el.innerText;
+                const length = Math.max(oldText.length, newText.length);
+                const promise = new Promise((resolve) => this.resolve = resolve);
+                
+                this.queue = [];
+                for (let i = 0; i < length; i++) {
+                    const from = oldText[i] || '';
+                    const to = newText[i] || '';
+                    const start = Math.floor(Math.random() * 40);
+                    const end = start + Math.floor(Math.random() * 40);
+                    this.queue.push({ from, to, start, end });
+                }
+                
+                cancelAnimationFrame(this.frameRequest);
+                this.frame = 0;
+                this.update();
+                return promise;
+            }
+
+            update() {
+                let output = '';
+                let complete = 0;
+                for (let i = 0, n = this.queue.length; i < n; i++) {
+                    let { from, to, start, end, char } = this.queue[i];
+                    if (this.frame >= end) {
+                        complete++;
+                        output += to;
+                    } else if (this.frame >= start) {
+                        if (!char || Math.random() < 0.28) {
+                            char = this.randomChar();
+                            this.queue[i].char = char;
+                        }
+                        output += `<span style="font-family: monospace; opacity: 0.5;">${char}</span>`;
+                    } else {
+                        output += from;
+                    }
+                }
+                this.el.innerHTML = output;
+                if (complete === this.queue.length) {
+                    this.resolve();
+                } else {
+                    this.frameRequest = requestAnimationFrame(this.update.bind(this));
+                    this.frame++;
+                }
+            }
+            randomChar() {
+                return this.chars[Math.floor(Math.random() * this.chars.length)];
+            }
+        }
+
+        // Initialize scramble effects
+        document.querySelectorAll('.scramble-target').forEach(el => new TextScramble(el));
+
+        // Bio hover effect
+        const bodyText = document.querySelector('.scramble-body');
+        bodyText.addEventListener('mouseenter', () => {
+            bodyText.style.fontFamily = 'var(--font-mono)';
+            bodyText.style.letterSpacing = '-0.5px';
+            bodyText.style.opacity = '0.7';
+        });
+        bodyText.addEventListener('mouseleave', () => {
+            bodyText.style.fontFamily = 'var(--font-main)';
+            bodyText.style.letterSpacing = 'normal';
+            bodyText.style.opacity = '1';
+        });
+
+        // ASCII Canvas
+        const canvas = document.getElementById('ascii-canvas');
+        const ctx = canvas.getContext('2d');
+        const renderMsEl = document.getElementById('render-ms');
+
+        let width, height;
+        const charSize = 12;
+        const cols = () => Math.ceil(width / charSize);
+        const rows = () => Math.ceil(height / charSize);
+
+        const densityChars = " .'`^,:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
+
+        function resize() {
+            width = canvas.parentElement.clientWidth;
+            height = canvas.parentElement.clientHeight;
+            
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function simpleNoise(x, y, t) {
+            return Math.sin(x * 0.05 + t) * Math.cos(y * 0.05 + t) 
+                 + Math.sin(x * 0.01 - t) * Math.cos(y * 0.12) * 0.5;
+        }
+
+        let time = 0;
+        
+        function render() {
+            const start = performance.now();
+            ctx.clearRect(0, 0, width, height);
+            
+            ctx.font = `${charSize}px monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const colsCount = cols();
+            const rowsCount = rows();
+
+            for (let y = 0; y < rowsCount; y++) {
+                if (y < rowsCount * 0.4) continue;
+
+                for (let x = 0; x < colsCount; x++) {
+                    const posX = x * charSize;
+                    const posY = y * charSize;
+
+                    const dx = posX - mousePos.x;
+                    const dy = posY - (mousePos.y - canvas.getBoundingClientRect().top);
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    const normalizedY = (rowsCount - y) / rowsCount;
+                    const noiseVal = simpleNoise(x, y, time * 0.5);
+                    const mountainHeight = 0.3 + (Math.sin(x * 0.05 + time * 0.1) * 0.1) + (Math.cos(x * 0.2) * 0.05);
+
+                    let char = '';
+                    let alpha = 0;
+
+                    if (normalizedY < mountainHeight + (noiseVal * 0.1)) {
+                        const index = Math.floor(Math.abs(noiseVal) * densityChars.length);
+                        char = densityChars[index % densityChars.length];
+                        alpha = 1 - (normalizedY * 2);
+                    }
+
+                    if (dist < 150) {
+                        const lensStrength = 1 - (dist / 150);
+                        
+                        if (Math.random() > 0.5) {
+                            char = Math.random() > 0.5 ? '0' : '1';
+                            ctx.fillStyle = `rgba(142, 69, 133, ${lensStrength})`;
+                        } else {
+                            ctx.fillStyle = `rgba(100, 100, 100, ${alpha})`;
+                        }
+                        
+                        const shiftX = (dx / dist) * 10 * lensStrength;
+                        const shiftY = (dy / dist) * 10 * lensStrength;
+                        
+                        ctx.fillText(char, posX + (charSize/2) - shiftX, posY + (charSize/2) - shiftY);
+                    } else if (char) {
+                        ctx.fillStyle = `rgba(100, 100, 100, ${alpha})`;
+                        ctx.fillText(char, posX + (charSize/2), posY + (charSize/2));
+                    }
+                }
+            }
+
+            time += 0.01;
+            const duration = performance.now() - start;
+            renderMsEl.textContent = duration.toFixed(1);
+            
+            requestAnimationFrame(render);
+        }
+
+        render();
+    </script>
+
+</body>
+</html>
